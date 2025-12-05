@@ -1,0 +1,21 @@
+{
+  "name": "tech_kds_panel",
+  "version": "1.0.0",
+  "description": "Tech KDS Subeler icin karar destek paneli",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  },
+  "dependencies": {
+    "body-parser": "^1.20.3",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "mysql2": "^3.11.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
+

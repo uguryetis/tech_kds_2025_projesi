@@ -1,0 +1,60 @@
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <img src="/logo.png" alt="İndeks Bilgisayar Logo" class="sidebar-logo-img">
+    <span class="sidebar-logo-text">İNDEKS BİLGİSAYAR</span>
+  </div>
+
+  <ul class="nav-links">
+    <li>
+      <a href="/" class="<%= activePage === 'dashboard' ? 'active' : '' %>">
+        <i class="fa-solid fa-house nav-link-icon"></i>
+        Anasayfa
+      </a>
+    </li>
+    <li>
+      <a href="/sube-ciro" class="<%= activePage === 'sube-ciro' ? 'active' : '' %>">
+        <i class="fa-solid fa-chart-column nav-link-icon"></i>
+        Şube Ciro Analizi
+      </a>
+    </li>
+    <li>
+      <a href="/sube-kar" class="<%= activePage === 'sube-kar' ? 'active' : '' %>">
+        <i class="fa-solid fa-chart-line nav-link-icon"></i>
+        Şube Kâr Analizi
+      </a>
+    </li>
+    <li>
+      <a href="/sube-musteri" class="<%= activePage === 'sube-musteri' ? 'active' : '' %>">
+        <i class="fa-solid fa-users nav-link-icon"></i>
+        Şube Müşteri Analizi
+      </a>
+    </li>
+    <li>
+      <a href="/sube-stok" class="<%= activePage === 'sube-stok' ? 'active' : '' %>">
+        <i class="fa-solid fa-boxes-stacked nav-link-icon"></i>
+        Şube Stok Analizi
+      </a>
+    </li>
+    <li>
+      <a href="/iki-sube-kar" class="<%= activePage === 'iki-sube-kar' ? 'active' : '' %>">
+        <i class="fa-solid fa-code-compare nav-link-icon"></i>
+        İki Şube Kâr Karşılaştırma
+      </a>
+    </li>
+    <li>
+      <a href="/urunler" class="<%= activePage === 'urunler' ? 'active' : '' %>">
+        <i class="fa-solid fa-box nav-link-icon"></i>
+        Ürünler
+      </a>
+    </li>
+  </ul>
+
+  <div class="logout-link">
+    <a href="/logout">
+      <i class="fa-solid fa-right-from-bracket nav-link-icon"></i>
+      Çıkış Yap
+    </a>
+  </div>
+</div>
+
+

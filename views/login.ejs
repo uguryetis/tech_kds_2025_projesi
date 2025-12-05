@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <%- include('partials/head') %>
+</head>
+<body>
+  <div class="login-wrapper">
+    <div class="login-card">
+      <h1>Yönetici Girişi</h1>
+      <% if (error) { %>
+        <div class="login-error"><%= error %></div>
+      <% } %>
+      <form action="/login" method="post">
+        <label for="kullanici_id">Kullanıcı Adı</label>
+        <input type="text" id="kullanici_id" name="kullanici_id" required>
+
+        <label for="sifre">Şifre</label>
+        <input type="password" id="sifre" name="sifre" required>
+
+        <button type="submit">Giriş Yap</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
+

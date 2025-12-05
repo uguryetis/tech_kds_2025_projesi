@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <%- include('partials/head') %>
+  <script>
+    google.charts.load('current', { packages: ['corechart'] });
+    google.charts.setOnLoadCallback(drawCharts);
+
+    var yil = <%= yil %>;
+    var seciliAy = <%= seciliAy %>;
+
+    function ayAdi(ay) {
+      const adlar = ['', 'Ocak','Şubat','Mart','Nisan','Mayıs','Haziran'];
+      return adlar[ay] || ay;
+    }
+
+    function drawCharts() {
+      drawAylikKarChart();
+      drawToplamKarChart();
+    }
+
+    function drawAylikKarChart() {
+      var data = new google.visualization.DataTable();
+      data.addColumn('string', 'Şube');
+      data.addColumn('number', 'Kâr');
+
+      data.addRows([
+        <% for (let i = 0; i < karData.length; i++) {
+             const row = karData[i]; %>
+          ['<%= row.sube %>', <%= row.kar %>]<%= i === karData.length - 1 ? '' : ',' %>
+        <% } %>
+      ]);
+
+      var options = {
+        title: 'Şubelere Göre Kâr - ' + yil + '/' + ayAdi(seciliAy),
+        legend: { position: 'none' },
+        hAxis: { title: 'Şube' },
+        vAxis: {
+          title: 'Kâr (₺)',
+          format: 'short'
+        },
+        colors: ['#38bdf8'],
+        chartArea: { left: 60, top: 50, width: '80%', height: '65%' }
+      };
+
+      var chart = new google.visualization.ColumnChart(document.getElementById('aylikKarChart'));
+      chart.draw(data, options);
+    }
+
+    function drawToplamKarChart() {
+      var data = new google.visualization.DataTable();
+      data.addColumn('string', 'Ay');
+      data.addColumn('number', 'Toplam Kâr');
+
+      data.addRows([
+        <% for (let i = 0; i < toplamKarAnalizi.length; i++) {
+             const r = toplamKarAnalizi[i]; %>
+          [ayAdi(<%= r.ay %>), <%= r.toplam_kar %>]<%= i === toplamKarAnalizi.length - 1 ? '' : ',' %>
+        <% } %>
+      ]);
+
+      var options = {
+        title: 'Ocak–Haziran 2025 Toplam Kâr Analizi',
+        legend: { position: 'none' },
+        hAxis: { title: 'Ay' },
+        vAxis: {
+          title: 'Toplam Kâr (₺)',
+          format: 'short'
+        },
+        colors: ['#0ea5e9'],
+        chartArea: { left: 60, top: 50, width: '80%', height: '65%' }
+      };
+
+      var chart = new google.visualization.LineChart(document.getElementById('toplamKarChart'));
+      chart.draw(data, options);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const label = document.getElementById('secilenAyLabel');
+      if (label) {
+        label.textContent = yil + '/' + ayAdi(seciliAy);
+      }
+    });
+  </script>
+</head>
+<body>
+  <div class="wrapper">
+    <%- include('partials/nav', { activePage: 'sube-kar' }) %>
+
+    <main class="main-content">
+      <h1 class="page-title">Şube Kâr Analizi</h1>
+
+      <div class="filter-bar">
+        <div class="filter-group">
+          <label for="ay">Ay Seç</label>
+          <form action="/sube-kar" method="get" style="display:flex; gap:8px;">
+            <select name="ay" id="ay">
+              <option value="1" <%= seciliAy === 1 ? 'selected' : '' %>>Ocak</option>
+              <option value="2" <%= seciliAy === 2 ? 'selected' : '' %>>Şubat</option>
+              <option value="3" <%= seciliAy === 3 ? 'selected' : '' %>>Mart</option>
+              <option value="4" <%= seciliAy === 4 ? 'selected' : '' %>>Nisan</option>
+              <option value="5" <%= seciliAy === 5 ? 'selected' : '' %>>Mayıs</option>
+              <option value="6" <%= seciliAy === 6 ? 'selected' : '' %>>Haziran</option>
+            </select>
+            <button type="submit" class="btn-primary">
+              <i class="fa-solid fa-filter"></i>
+              Verileri Göster
+            </button>
+          </form>
+        </div>
+        <div class="summary-text">
+          Seçili Ay:
+          <span id="secilenAyLabel"></span>
+        </div>
+      </div>
+
+      <div class="card-large-chart">
+        <div id="aylikKarChart"></div>
+      </div>
+
+      <div class="card-large-chart" style="margin-top: 20px;">
+        <div id="toplamKarChart"></div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
+
+

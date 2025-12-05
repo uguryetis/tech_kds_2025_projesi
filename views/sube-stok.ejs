@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <%- include('partials/head') %>
+  <script>
+    google.charts.load('current', { packages: ['corechart'] });
+    google.charts.setOnLoadCallback(drawChart);
+
+    var yil = <%= yil %>;
+    var seciliAy = <%= seciliAy %>;
+
+    function ayAdi(ay) {
+      const adlar = ['', 'Ocak','Şubat','Mart','Nisan','Mayıs','Haziran'];
+      return adlar[ay] || ay;
+    }
+
+    function drawChart() {
+      var data = new google.visualization.DataTable();
+      data.addColumn('string', 'Şube');
+      data.addColumn('number', 'Stokta Kalma Süresi (Gün)');
+      data.addColumn({ type: 'string', role: 'style' }); 
+
+      
+      data.addRows([
+        <% 
+       
+
+          const ayIndex = (seciliAy >= 1 && seciliAy <= 6) ? seciliAy - 1 : 0;
+
+          const gunMat = {
+            'Gaziemir': [5.2, 6.8, 9.1, 7.4, 5.9, 9.8],
+            'Bayraklı': [8.3, 9.7, 11.2, 12.6, 10.4, 12.8],
+            'Karşıyaka': [9.5, 11.0, 13.8, 15.2, 12.1, 15.9],
+            'Urla'    : [16.1, 17.5, 18.3, 19.7, 17.9, 19.2],
+            'Selçuk'  : [24.4, 26.8, 27.9, 29.1, 25.7, 28.5]
+          };
+
+          const subeler = ['Gaziemir', 'Bayraklı', 'Karşıyaka', 'Urla', 'Selçuk'];
+          let stokGunler = [];
+          let maxGun = 0;
+          let maxSube = null;
+
+          
+          for (let i = 0; i < subeler.length; i++) {
+            const s = subeler[i];
+            const dizi = gunMat[s] || [];
+            let g = dizi[ayIndex] || dizi[0] || 0;
+
+            stokGunler.push({ sube: s, gun: g });
+            if (g > maxGun) {
+              maxGun = g;
+              maxSube = s;
+            }
+          }
+
+          
+          for (let i = 0; i < stokGunler.length; i++) {
+            const row = stokGunler[i];
+            const renk = (row.sube === maxSube)
+              ? 'color: #f9a8d4'  
+              : 'color: #38bdf8'; 
+        %>
+          ['<%= row.sube %>', <%= row.gun.toFixed(1) %>, '<%= renk %>']<%= i === stokGunler.length - 1 ? '' : ',' %>
+        <% } %>
+      ]);
+
+      var options = {
+        title: 'Şubelere Göre Stokta Kalma Süresi - ' + yil + '/' + ayAdi(seciliAy),
+        legend: { position: 'none' },
+        hAxis: { title: 'Şube' },
+        vAxis: {
+          title: 'Stokta Kalma Süresi (Gün)',
+          viewWindow: { min: 0, max: 30 },
+          format: '0'
+        },
+        chartArea: { left: 60, top: 50, width: '80%', height: '65%' }
+      };
+
+      var chart = new google.visualization.ColumnChart(document.getElementById('stokChart'));
+      chart.draw(data, options);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const label = document.getElementById('secilenAyLabel');
+      if (label) {
+        label.textContent = yil + '/' + ayAdi(seciliAy);
+      }
+    });
+  </script>
+</head>
+<body>
+  <div class="wrapper">
+    <%- include('partials/nav', { activePage: 'sube-stok' }) %>
+
+    <main class="main-content">
+      <h1 class="page-title">Şube Stok Analizi</h1>
+
+      <div class="filter-bar">
+        <div class="filter-group">
+          <label for="ay">Ay Seç</label>
+          <form action="/sube-stok" method="get" style="display:flex; gap:8px;">
+            <select name="ay" id="ay">
+              <option value="1" <%= seciliAy === 1 ? 'selected' : '' %>>Ocak</option>
+              <option value="2" <%= seciliAy === 2 ? 'selected' : '' %>>Şubat</option>
+              <option value="3" <%= seciliAy === 3 ? 'selected' : '' %>>Mart</option>
+              <option value="4" <%= seciliAy === 4 ? 'selected' : '' %>>Nisan</option>
+              <option value="5" <%= seciliAy === 5 ? 'selected' : '' %>>Mayıs</option>
+              <option value="6" <%= seciliAy === 6 ? 'selected' : '' %>>Haziran</option>
+            </select>
+            <button type="submit" class="btn-primary">
+              <i class="fa-solid fa-filter"></i>
+              Verileri Göster
+            </button>
+          </form>
+        </div>
+        <div class="summary-text">
+          Seçili Ay:
+          <span id="secilenAyLabel"></span>
+        </div>
+      </div>
+
+      <div class="card-large-chart">
+        <div id="stokChart"></div>
+      </div>
+
+      
+      <div class="card" style="margin-top: 16px;">
+        <p style="font-size:14px; color:#b91c1c;">
+          Özellikle <strong>Selçuk</strong> şubesinin stok devir hızı diğer şubelere göre daha düşük seyretmektedir.
+          Yüksek stokta kalma süresi, maliyetleri artırabileceği için performans odaklı yaklaşımla değerlendirilmelidir.
+        </p>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
+
+
+
+
+
+
+
+
