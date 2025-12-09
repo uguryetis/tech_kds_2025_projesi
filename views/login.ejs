@@ -1,23 +1,168 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <%- include('partials/head') %>
+  <%- include('partials/head', { title }) %>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f172a;
+      color: #f9fafb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .login-wrapper {
+      width: 100%;
+      max-width: 420px;
+      padding: 16px;
+    }
+
+    .login-card {
+      background: #111827;
+      border-radius: 16px;
+      padding: 24px 24px 20px;
+      box-shadow: 0 10px 35px rgba(15, 23, 42, 0.7);
+      border: 1px solid #1f2937;
+    }
+
+    .login-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .login-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background-color: #ffffff;
+      background-image: url("/indes_logo.png"); 
+      background-size: cover;
+      background-position: center;
+    }
+
+    .login-title-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .login-title-text span:first-child {
+      font-size: 13px;
+      color: #9ca3af;
+    }
+
+    .login-title-text span:last-child {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .login-card h1 {
+      font-size: 18px;
+      margin: 10px 0 14px;
+    }
+
+    .login-error {
+      background: #b91c1c;
+      color: #fee2e2;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    .login-form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 12px;
+      font-size: 13px;
+    }
+
+    .login-form-group label {
+      color: #d1d5db;
+    }
+
+    .login-form-group input {
+      padding: 7px 10px;
+      border-radius: 8px;
+      border: 1px solid #4b5563;
+      background: #0b1120;
+      color: #f9fafb;
+      font-size: 13px;
+    }
+
+    .login-form-group input:focus {
+      outline: none;
+      border-color: #22c55e;
+      box-shadow: 0 0 0 1px #22c55e33;
+    }
+
+    .login-actions {
+      margin-top: 10px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .btn-login {
+      border: none;
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 13px;
+      background: #22c55e;
+      color: #0f172a;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-login:hover {
+      background: #0ea5e9;
+      color: #0b1120;
+    }
+  </style>
 </head>
 <body>
   <div class="login-wrapper">
     <div class="login-card">
+
+      <div class="login-title">
+        <div class="login-logo"></div>
+        <div class="login-title-text">
+          <span>Yönetim Paneli</span>
+          <span>İNDEKS BİLGİSAYAR</span>
+        </div>
+      </div>
+
       <h1>Yönetici Girişi</h1>
-      <% if (error) { %>
+
+      <% if (typeof error !== 'undefined' && error) { %>
         <div class="login-error"><%= error %></div>
       <% } %>
+
       <form action="/login" method="post">
-        <label for="kullanici_id">Kullanıcı Adı</label>
-        <input type="text" id="kullanici_id" name="kullanici_id" required>
+        <div class="login-form-group">
+          <label for="username">Kullanıcı Adı</label>
+          <input type="text" id="username" name="username" placeholder="admin" required>
+        </div>
 
-        <label for="sifre">Şifre</label>
-        <input type="password" id="sifre" name="sifre" required>
+        <div class="login-form-group">
+          <label for="password">Şifre</label>
+          <input type="password" id="password" name="password" placeholder="1234" required>
+        </div>
 
-        <button type="submit">Giriş Yap</button>
+        <div class="login-actions">
+          <button type="submit" class="btn-login">
+            Giriş Yap
+            <i class="fa-solid fa-arrow-right-to-bracket"></i>
+          </button>
+        </div>
       </form>
     </div>
   </div>

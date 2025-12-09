@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <%- include('partials/head', { title }) %>
+</head>
+<body>
+  <div class="wrapper">
+    <%- include('partials/nav', { activePage }) %>
+
+    <main class="main-content">
+      <h1 class="page-title">İki Şube Kâr Karşılaştırma</h1>
+
+      <div class="card">
+        <form action="/kar-karsilastirma" method="get" class="filter-bar">
+          <div class="filter-group">
+            <label for="sube1">1. Şube</label>
+            <select name="sube1" id="sube1">
+              <% BRANCHES.forEach(b => { %>
+                <option value="<%= b.key %>" <%= sube1Key === b.key ? 'selected' : '' %>>
+                  <%= b.name %>
+                </option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="sube2">2. Şube</label>
+            <select name="sube2" id="sube2">
+              <% BRANCHES.forEach(b => { %>
+                <option value="<%= b.key %>" <%= sube2Key === b.key ? 'selected' : '' %>>
+                  <%= b.name %>
+                </option>
+              <% }) %>
+            </select>
+          </div>
+
+          <button type="submit" class="btn-primary">
+            <i class="fa-solid fa-filter"></i>
+            Verileri Göster
+          </button>
+        </form>
+      </div>
+
+      <div class="card-large-chart">
+        <canvas id="karCompareChart"></canvas>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const labels  = <%- JSON.stringify(labels) %>;
+    const ds1     = <%- JSON.stringify(dataset1) %>;
+    const ds2     = <%- JSON.stringify(dataset2) %>;
+
+    const ctx = document.getElementById('karCompareChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [ds1, ds2]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            title: { display: true, text: 'Net Kâr (Milyon TL)' },
+            beginAtZero: true
+          }
+        },
+        plugins: {
+          legend: { position: 'bottom' },
+          title: {
+            display: true,
+            text: 'Ocak – Haziran 2025 İki Şube Net Kâr Karşılaştırması'
+          },
+          tooltip: {
+            callbacks: {
+              label: function (ctx) {
+                return ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(2) + ' M TL';
+              }
+            }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+
+
+
+

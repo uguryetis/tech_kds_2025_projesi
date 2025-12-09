@@ -1,521 +1,530 @@
+// app.js
 const express = require('express');
 const path = require('path');
-const mysql = require('mysql2');
-const session = require('express-session');
+const db = require('./db');
 
 const app = express();
+const PORT = 3000;
 
-// -------------------------
-// 1) MIDDLEWARE & AYARLAR
-// -------------------------
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-app.use(express.urlencoded({ extended: true }));
+
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.urlencoded({ extended: true }));
 
-app.use(
-  session({
-    secret: 'tech_kds_secret',
-    resave: false,
-    saveUninitialized: false,
-  })
-);
 
-// -------------------------
-// 2) MYSQL BAĞLANTISI
-// -------------------------
+const BRANCHES = [
+  { key: 'gaziemir',  id: 1, name: 'Gaziemir',  color: '#2ecc71' }, // yeşil
+  { key: 'bayrakli',  id: 2, name: 'Bayraklı',  color: '#3498db' }, // mavi
+  { key: 'karsiyaka', id: 3, name: 'Karşıyaka', color: '#95a5a6' }, // gri
+  { key: 'urla',      id: 4, name: 'Urla',      color: '#f39c12' }, // turuncu
+  { key: 'selcuk',    id: 5, name: 'Selçuk',    color: '#e74c3c' }, // kırmızı
+];
 
-const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',      
-  password: '',      
-  database: 'tech_kds',
-  multipleStatements: true,
-});
+const MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran'];
 
-db.connect((err) => {
-  if (err) {
-    console.error('MySQL bağlantı hatası:', err);
-  } else {
-    console.log('MySQL bağlantısı başarılı');
+app.locals.BRANCHES = BRANCHES;
+app.locals.MONTHS = MONTHS;
+
+
+function rgbaForBranch(key) {
+  switch (key) {
+    case 'gaziemir':  return 'rgba(46, 204, 113, 0.2)';
+    case 'bayrakli':  return 'rgba(52, 152, 219, 0.2)';
+    case 'karsiyaka': return 'rgba(149, 165, 166, 0.2)';
+    case 'urla':      return 'rgba(243, 156, 18, 0.2)';
+    case 'selcuk':    return 'rgba(231, 76, 60, 0.2)';
+    default:          return 'rgba(149, 165, 166, 0.2)';
   }
-});
-
-// -------------------------
-// 3) AUTH MIDDLEWARE
-// -------------------------
-
-function requireAuth(req, res, next) {
-  if (req.session && req.session.loggedIn) {
-    return next();
-  }
-  return res.redirect('/login');
 }
 
-// -------------------------
-// 4) LOGIN / LOGOUT
-// -------------------------
+// ================== LOGIN ==================
 
-// Login sayfası
 app.get('/login', (req, res) => {
-  res.render('login', { title: 'Giriş', error: null });
+  res.render('login', { title: 'Giriş Yap', error: null });
 });
 
-// Login post
 app.post('/login', (req, res) => {
-  const { kullanici_id, sifre } = req.body;
-
-  const sql = `
-    SELECT * FROM admin
-    WHERE kullanici_id = ? AND sifre = ?
-  `;
-
-  db.query(sql, [kullanici_id, sifre], (err, rows) => {
-    if (err) {
-      console.error('Login hatası:', err);
-      return res.render('login', {
-        title: 'Giriş',
-        error: 'Veritabanı hatası',
-      });
-    }
-
-    if (rows.length === 0) {
-      return res.render('login', {
-        title: 'Giriş',
-        error: 'Kullanıcı adı veya şifre hatalı',
-      });
-    }
-
-    req.session.loggedIn = true;
-    req.session.username = kullanici_id;
-    res.redirect('/');
-  });
+  
+  return res.redirect('/');
 });
 
-// Logout
-app.get('/logout', (req, res) => {
-  req.session.destroy(() => {
-    res.redirect('/login');
-  });
-});
+// ================== ANASAYFA ==================
 
-// -------------------------
-// 5) ANASAYFA (GENEL İSTATİSTİKLER)
-// -------------------------
-
-app.get('/', requireAuth, (req, res) => {
+app.get('/', async (req, res) => {
   const yil = 2025;
 
-  const sqlToplamSube = 'SELECT COUNT(*) AS toplamSube FROM sube';
+  try {
+    const [rows] = await db.query(`
+      SELECT s.sube_adi,
+             SUM(p.ciro_milyon)    AS toplam_ciro_m,
+             SUM(p.net_kar_milyon) AS toplam_kar_m
+      FROM sube_aylik_performans p
+      JOIN sube s ON p.sube_id = s.sube_id
+      WHERE p.yil = ?
+      GROUP BY s.sube_id, s.sube_adi
+    `, [yil]);
 
-  const sqlKarOzet = `
-    SELECT s.sube_adi, SUM(k.kar) AS toplam_kar
-    FROM sube_kar k
-    JOIN sube s ON s.sube_id = k.sube_id
-    WHERE k.yil = ?
-      AND k.ay BETWEEN 1 AND 6
-    GROUP BY s.sube_id, s.sube_adi
-    ORDER BY toplam_kar DESC
-  `;
+    const toplamSube = rows.length;
 
-  db.query(sqlToplamSube, (err1, rows1) => {
-    if (err1) {
-      console.error('Toplam şube sorgu hatası:', err1);
-      return res.status(500).send('Veritabanı hatası');
-    }
+    const enCokKar = [...rows]
+      .sort((a, b) => Number(b.toplam_kar_m) - Number(a.toplam_kar_m))[0] || null;
 
-    const toplamSube = rows1[0]?.toplamSube || 0;
+    const enAzKar = [...rows]
+      .sort((a, b) => Number(a.toplam_kar_m) - Number(b.toplam_kar_m))[0] || null;
 
-    db.query(sqlKarOzet, [yil], (err2, rows2) => {
-      if (err2) {
-        console.error('Kâr özet sorgu hatası:', err2);
-        return res.status(500).send('Veritabanı hatası');
-      }
-
-      let enCokKar = null;
-      let enAzKar = null;
-
-      if (rows2.length > 0) {
-        enCokKar = rows2[0];
-        enAzKar = rows2[rows2.length - 1];
-      }
-
-      res.render('dashboard', {
-        title: 'Anasayfa',
-        activePage: 'dashboard',
-        toplamSube,
-        enCokKar,
-        enAzKar,
-      });
+    res.render('dashboard', {
+      title: 'Anasayfa',
+      activePage: 'dashboard',
+      toplamSube,
+      enCokKar,
+      enAzKar,
     });
-  });
+  } catch (err) {
+    console.error('Anasayfa hata:', err);
+    res.render('dashboard', {
+      title: 'Anasayfa',
+      activePage: 'dashboard',
+      toplamSube: 0,
+      enCokKar: null,
+      enAzKar: null,
+    });
+  }
 });
 
-// -------------------------
-// 6) ŞUBE CİRO ANALİZİ
-// -------------------------
+// ================== ŞUBE CİRO ANALİZİ ==================
 
-app.get('/sube-ciro', requireAuth, (req, res) => {
+app.get('/sube-ciro', async (req, res) => {
   const yil = 2025;
-  const seciliAy = req.query.ay ? parseInt(req.query.ay, 10) : 1;
+  const seciliAy = parseInt(req.query.ay || '1', 10);
 
-  const sql = `
-    SELECT s.sube_adi, SUM(k.hasilat) AS toplam_ciro
-    FROM sube_kar k
-    JOIN sube s ON s.sube_id = k.sube_id
-    WHERE k.yil = ? AND k.ay = ?
-    GROUP BY s.sube_id, s.sube_adi
-    ORDER BY toplam_ciro DESC
-  `;
+  try {
+    const [rows] = await db.query(`
+      SELECT p.sube_id, s.sube_adi, p.ay, p.ciro_milyon
+      FROM sube_aylik_performans p
+      JOIN sube s ON p.sube_id = s.sube_id
+      WHERE p.yil = ? AND p.ay = ?
+      ORDER BY p.sube_id
+    `, [yil, seciliAy]);
 
-  db.query(sql, [yil, seciliAy], (err, rows) => {
-    if (err) {
-      console.error('Şube ciro sorgu hatası:', err);
-      return res.status(500).send('Veritabanı hatası');
-    }
-
-    let toplamCiro = 0;
-    const ciroData = rows.map((r) => {
-      const ciro = Number(r.toplam_ciro || 0);
-      toplamCiro += ciro;
-      const renk = ciro < 100000 ? '#fecaca' : '#bbf7d0'; 
-      return {
-        sube: r.sube_adi,
-        ciro,
-        renk,
-      };
+    const barLabels = BRANCHES.map(b => b.name);
+    const barData = BRANCHES.map(b => {
+      const row = rows.find(r => r.sube_id === b.id);
+      return row ? Number(row.ciro_milyon) : 0;
     });
+    const barColors = BRANCHES.map(b => b.color);
 
     res.render('sube-ciro', {
       title: 'Şube Ciro Analizi',
       activePage: 'sube-ciro',
-      yil,
+      months: MONTHS,
       seciliAy,
-      ciroData,
-      toplamCiro,
+      barLabels,
+      barData,
+      barColors,
     });
-  });
+  } catch (err) {
+    console.error('Şube ciro hata:', err);
+    res.render('sube-ciro', {
+      title: 'Şube Ciro Analizi',
+      activePage: 'sube-ciro',
+      months: MONTHS,
+      seciliAy: 1,
+      barLabels: [],
+      barData: [],
+      barColors: [],
+    });
+  }
 });
 
-// -------------------------
-// 7) ŞUBE KÂR ANALİZİ
-// -------------------------
+// ================== ŞUBE KÂR ANALİZİ ==================
 
-app.get('/sube-kar', requireAuth, (req, res) => {
+app.get('/sube-kar', async (req, res) => {
   const yil = 2025;
-  const seciliAy = req.query.ay ? parseInt(req.query.ay, 10) : 1;
+  const seciliAy = parseInt(req.query.ay || '1', 10);
 
-  const sqlAylik = `
-    SELECT s.sube_adi, SUM(k.kar) AS toplam_kar
-    FROM sube_kar k
-    JOIN sube s ON s.sube_id = k.sube_id
-    WHERE k.yil = ? AND k.ay = ?
-    GROUP BY s.sube_id, s.sube_adi
-    ORDER BY toplam_kar DESC
-  `;
+  try {
+    const [rows] = await db.query(`
+      SELECT p.sube_id, s.sube_adi, p.ay, p.net_kar_milyon
+      FROM sube_aylik_performans p
+      JOIN sube s ON p.sube_id = s.sube_id
+      WHERE p.yil = ?
+      ORDER BY p.ay, p.sube_id
+    `, [yil]);
 
-  const sqlToplamKar = `
-    SELECT k.ay, SUM(k.kar) AS toplam_kar
-    FROM sube_kar k
-    WHERE k.yil = ?
-      AND k.ay BETWEEN 1 AND 6
-    GROUP BY k.ay
-    ORDER BY k.ay
-  `;
+    
+    const barLabels = BRANCHES.map(b => b.name);
+    const barData = BRANCHES.map(b => {
+      const row = rows.find(r => r.ay === seciliAy && r.sube_id === b.id);
+      return row ? Number(row.net_kar_milyon) : 0;
+    });
+    const barColors = BRANCHES.map(b => b.color);
 
-  db.query(sqlAylik, [yil, seciliAy], (err1, rows1) => {
-    if (err1) {
-      console.error('Şube kâr aylık sorgu hatası:', err1);
-      return res.status(500).send('Veritabanı hatası');
+    
+    const lineLabels = MONTHS;
+    const totalData = [];
+
+    for (let ay = 1; ay <= 6; ay++) {
+      const aylikToplam = rows
+        .filter(r => r.ay === ay)
+        .reduce((acc, r) => acc + Number(r.net_kar_milyon), 0);
+      totalData.push(aylikToplam);
     }
 
-    const karData = rows1.map((r) => ({
-      sube: r.sube_adi,
-      kar: Number(r.toplam_kar || 0),
-    }));
+    const totalLineDataset = {
+      label: 'Toplam Net Kâr',
+      borderColor: '#1d4ed8',
+      backgroundColor: 'rgba(37, 99, 235, 0.15)',
+      data: totalData,
+      fill: true,
+      tension: 0,
+    };
 
-    db.query(sqlToplamKar, [yil], (err2, rows2) => {
-      if (err2) {
-        console.error('Toplam kâr analizi sorgu hatası:', err2);
-        return res.status(500).send('Veritabanı hatası');
-      }
-
-      const toplamKarAnalizi = rows2.map((r) => ({
-        ay: r.ay,
-        toplam_kar: Number(r.toplam_kar || 0),
-      }));
-
-      res.render('sube-kar', {
-        title: 'Şube Kâr Analizi',
-        activePage: 'sube-kar',
-        yil,
-        seciliAy,
-        karData,
-        toplamKarAnalizi,
-      });
+    res.render('sube-kar', {
+      title: 'Şube Kâr Analizi',
+      activePage: 'sube-kar',
+      months: MONTHS,
+      seciliAy,
+      barLabels,
+      barData,
+      barColors,
+      lineLabels,
+      totalLineDataset,
     });
-  });
+  } catch (err) {
+    console.error('Şube kâr hata:', err);
+    res.render('sube-kar', {
+      title: 'Şube Kâr Analizi',
+      activePage: 'sube-kar',
+      months: MONTHS,
+      seciliAy: 1,
+      barLabels: [],
+      barData: [],
+      barColors: [],
+      lineLabels: MONTHS,
+      totalLineDataset: {
+        label: 'Toplam Net Kâr',
+        borderColor: '#1d4ed8',
+        backgroundColor: 'rgba(37, 99, 235, 0.15)',
+        data: [0, 0, 0, 0, 0, 0],
+        fill: true,
+        tension: 0,
+      },
+    });
+  }
 });
 
-// -------------------------
-// 8) ŞUBE MÜŞTERİ ANALİZİ
-// -------------------------
+// ================== ŞUBE MÜŞTERİ ANALİZİ ==================
 
-app.get('/sube-musteri', requireAuth, (req, res) => {
+app.get('/musteri-analiz', async (req, res) => {
   const yil = 2025;
-  const seciliAy = req.query.ay ? parseInt(req.query.ay, 10) : 1;
+  const seciliAy = parseInt(req.query.ay || '0', 10); 
 
-  const sql = `
-    SELECT s.sube_adi, m.toplam_ziyaret
-    FROM sube_musteri_ziyaret m
-    JOIN sube s ON s.sube_id = m.sube_id
-    WHERE m.yil = ? AND m.ay = ?
-    ORDER BY s.sube_id
-  `;
-
-  db.query(sql, [yil, seciliAy], (err, rows) => {
-    if (err) {
-      console.error('Şube müşteri sorgu hatası:', err);
-      return res.status(500).send('Veritabanı hatası');
+  try {
+    const params = [yil];
+    let whereAy = '';
+    if (seciliAy >= 1 && seciliAy <= 6) {
+      whereAy = ' AND p.ay = ?';
+      params.push(seciliAy);
     }
 
-    let toplamZiyaret = 0;
-    const musteriData = rows.map((r) => {
-      const ziyaret = Number(r.toplam_ziyaret || 0);
-      toplamZiyaret += ziyaret;
-      return {
-        sube: r.sube_adi,
-        ziyaret,
-      };
-    });
+    const [rows] = await db.query(`
+      SELECT p.sube_id, s.sube_adi,
+             SUM(p.musteri_sayisi) AS toplam_musteri
+      FROM sube_aylik_performans p
+      JOIN sube s ON p.sube_id = s.sube_id
+      WHERE p.yil = ? ${whereAy}
+      GROUP BY p.sube_id, s.sube_adi
+      ORDER BY p.sube_id
+    `, params);
 
-    res.render('sube-musteri', {
+    const labels = rows.map(r => r.sube_adi);
+    const data = rows.map(r => Number(r.toplam_musteri));
+    const colors = rows.map(r => {
+      const b = BRANCHES.find(b => b.name === r.sube_adi);
+      return b ? b.color : '#999999';
+    });
+    const offsets = labels.map(label => (label === 'Selçuk' ? 15 : 0)); 
+
+    res.render('musteri-analiz', {
       title: 'Şube Müşteri Analizi',
-      activePage: 'sube-musteri',
-      yil,
+      activePage: 'musteri-analiz',
+      months: MONTHS,
       seciliAy,
-      musteriData,
-      toplamZiyaret,
+      labels,
+      data,
+      colors,
+      offsets,
     });
-  });
+  } catch (err) {
+    console.error('Müşteri analiz hata:', err);
+    res.render('musteri-analiz', {
+      title: 'Şube Müşteri Analizi',
+      activePage: 'musteri-analiz',
+      months: MONTHS,
+      seciliAy: 0,
+      labels: [],
+      data: [],
+      colors: [],
+      offsets: [],
+    });
+  }
 });
 
-// -------------------------
-// 9) ŞUBE STOK ANALİZİ – STOKTA KALMA SÜRESİ (GÜN)
-// -------------------------
+// ================== ŞUBE STOK ANALİZİ ==================
 
-app.get('/sube-stok', requireAuth, (req, res) => {
+
+
+app.get('/sube-stok', async (req, res) => {
   const yil = 2025;
-  const seciliAy = req.query.ay ? parseInt(req.query.ay, 10) : 1;
 
-  const sql = `
-    SELECT s.sube_adi, k.ay, k.stok_kullanilan, k.stok_eklenen
-    FROM sube_stok_kullanim k
-    JOIN sube s ON s.sube_id = k.sube_id
-    WHERE k.yil = ? AND k.ay = ?
-    ORDER BY s.sube_id
-  `;
+  
+  const seciliAy = parseInt(req.query.ay || '1', 10);
 
-  db.query(sql, [yil, seciliAy], (err, rows) => {
-    if (err) {
-      console.error('Şube stok sorgu hatası:', err);
-      return res.status(500).send('Veritabanı hatası');
+  
+  const sube1Key = req.query.sube1 || 'gaziemir';
+  const sube2Key = req.query.sube2 || 'selcuk';
+
+  const sube1 = BRANCHES.find(b => b.key === sube1Key) || BRANCHES[0];
+  const sube2 = BRANCHES.find(b => b.key === sube2Key) || BRANCHES[4];
+
+  try {
+    
+    const [rowsMonth] = await db.query(`
+      SELECT ss.sube_id, s.sube_adi, ss.stok_gun
+      FROM sube_stok_kullanim ss
+      JOIN sube s ON ss.sube_id = s.sube_id
+      WHERE ss.yil = ? AND ss.ay = ?
+      ORDER BY ss.sube_id
+    `, [yil, seciliAy]);
+
+    const barLabels = BRANCHES.map(b => b.name);
+    const barData = BRANCHES.map(b => {
+      const r = rowsMonth.find(row => row.sube_id === b.id);
+      return r ? Number(r.stok_gun) : 0;
+    });
+    const barColors = BRANCHES.map(b => b.color);
+
+    
+    const [rowsComp] = await db.query(`
+      SELECT ss.sube_id, s.sube_adi, ss.ay, ss.stok_gun
+      FROM sube_stok_kullanim ss
+      JOIN sube s ON ss.sube_id = s.sube_id
+      WHERE ss.yil = ?
+        AND ss.sube_id IN (?, ?)
+      ORDER BY ss.ay, ss.sube_id
+    `, [yil, sube1.id, sube2.id]);
+
+    const compareLabels = MONTHS;
+    const data1 = [];
+    const data2 = [];
+
+    for (let ay = 1; ay <= 6; ay++) {
+      const r1 = rowsComp.find(r => r.ay === ay && r.sube_id === sube1.id);
+      const r2 = rowsComp.find(r => r.ay === ay && r.sube_id === sube2.id);
+      data1.push(r1 ? Number(r1.stok_gun) : 0);
+      data2.push(r2 ? Number(r2.stok_gun) : 0);
     }
 
-    const stokData = rows.map((r) => {
-      const kullanilan = Number(r.stok_kullanilan || 0);
-      const eklenen = Number(r.stok_eklenen || 0);
+    const dataset1 = {
+      label: sube1.name,
+      borderColor: sube1.color,
+      backgroundColor: rgbaForBranch(sube1.key),
+      data: data1,
+      fill: true,
+      tension: 0
+    };
 
-      let gun = null;
-      if (kullanilan > 0) {
-        const ortalamaStok = eklenen - kullanilan / 2; 
-        gun = (ortalamaStok / kullanilan) * 30;        
-      }
-
-      return {
-        sube: r.sube_adi,
-        gun,
-      };
-    });
-
-    // En uzun stokta kalma süresi (en düşük devir) olan şube
-    let problemliSube = null;
-    stokData.forEach((item) => {
-      if (item.gun != null) {
-        if (!problemliSube || item.gun > problemliSube.gun) {
-          problemliSube = item;
-        }
-      }
-    });
+    const dataset2 = {
+      label: sube2.name,
+      borderColor: sube2.color,
+      backgroundColor: rgbaForBranch(sube2.key),
+      data: data2,
+      fill: true,
+      tension: 0
+    };
 
     res.render('sube-stok', {
       title: 'Şube Stok Analizi',
       activePage: 'sube-stok',
-      yil,
+      months: MONTHS,
       seciliAy,
-      stokData,
-      problemliSube,
+      barLabels,
+      barData,
+      barColors,
+      compareLabels,
+      dataset1,
+      dataset2,
+      sube1Key,
+      sube2Key,
     });
-  });
+  } catch (err) {
+    console.error('Şube stok hata:', err);
+    res.render('sube-stok', {
+      title: 'Şube Stok Analizi',
+      activePage: 'sube-stok',
+      months: MONTHS,
+      seciliAy: 1,
+      barLabels: [],
+      barData: [],
+      barColors: [],
+      compareLabels: MONTHS,
+      dataset1: null,
+      dataset2: null,
+      sube1Key,
+      sube2Key,
+    });
+  }
 });
 
-// -------------------------
-// 10) İKİ ŞUBE KÂR KARŞILAŞTIRMA
-// -------------------------
 
-app.get('/iki-sube-kar', requireAuth, (req, res) => {
+
+
+
+// ================== İKİ ŞUBE KÂR KARŞILAŞTIRMA ==================
+
+app.get('/kar-karsilastirma', async (req, res) => {
   const yil = 2025;
-  const sube1Id = req.query.sube1 ? parseInt(req.query.sube1, 10) : 1;
-  const sube2Id = req.query.sube2 ? parseInt(req.query.sube2, 10) : 2;
+  const sube1Key = req.query.sube1 || 'gaziemir';
+  const sube2Key = req.query.sube2 || 'selcuk';
 
-  const sqlSubeler = 'SELECT sube_id, sube_adi FROM sube ORDER BY sube_id';
+  const sube1 = BRANCHES.find(b => b.key === sube1Key) || BRANCHES[0];
+  const sube2 = BRANCHES.find(b => b.key === sube2Key) || BRANCHES[4];
 
-  const sqlKarKarsilastirma = `
-    SELECT k.ay, s.sube_id, s.sube_adi, SUM(k.kar) AS toplam_kar
-    FROM sube_kar k
-    JOIN sube s ON s.sube_id = k.sube_id
-    WHERE k.yil = ?
-      AND k.ay BETWEEN 1 AND 6
-      AND k.sube_id IN (?, ?)
-    GROUP BY k.ay, s.sube_id, s.sube_adi
-    ORDER BY k.ay, s.sube_id
-  `;
+  try {
+    const [rows] = await db.query(`
+      SELECT p.sube_id, s.sube_adi, p.ay, p.net_kar_milyon
+      FROM sube_aylik_performans p
+      JOIN sube s ON p.sube_id = s.sube_id
+      WHERE p.yil = ?
+        AND p.sube_id IN (?, ?)
+      ORDER BY p.ay, p.sube_id
+    `, [yil, sube1.id, sube2.id]);
 
-  db.query(sqlSubeler, (err1, subeRows) => {
-    if (err1) {
-      console.error('Şube listesi sorgu hatası:', err1);
-      return res.status(500).send('Veritabanı hatası');
+    const labels = MONTHS;
+    const data1 = [];
+    const data2 = [];
+
+    for (let ay = 1; ay <= 6; ay++) {
+      const r1 = rows.find(r => r.ay === ay && r.sube_id === sube1.id);
+      const r2 = rows.find(r => r.ay === ay && r.sube_id === sube2.id);
+      data1.push(r1 ? Number(r1.net_kar_milyon) : 0);
+      data2.push(r2 ? Number(r2.net_kar_milyon) : 0);
     }
 
-    db.query(sqlKarKarsilastirma, [yil, sube1Id, sube2Id], (err2, rows) => {
-      if (err2) {
-        console.error('İki şube kar karşılaştırma hatası:', err2);
-        return res.status(500).send('Veritabanı hatası');
-      }
+    const dataset1 = {
+      label: sube1.name,
+      borderColor: sube1.color,
+      backgroundColor: rgbaForBranch(sube1.key),
+      data: data1,
+      fill: true,
+      tension: 0,
+    };
 
-      const aylarSet = new Set();
-      const sube1KarlarMap = {};
-      const sube2KarlarMap = {};
-      let sube1Ad = '';
-      let sube2Ad = '';
+    const dataset2 = {
+      label: sube2.name,
+      borderColor: sube2.color,
+      backgroundColor: rgbaForBranch(sube2.key),
+      data: data2,
+      fill: true,
+      tension: 0,
+    };
 
-      rows.forEach((r) => {
-        const ay = r.ay;
-        const kar = Number(r.toplam_kar || 0);
-        aylarSet.add(ay);
-
-        if (r.sube_id === sube1Id) {
-          sube1Ad = r.sube_adi;
-          sube1KarlarMap[ay] = kar;
-        } else if (r.sube_id === sube2Id) {
-          sube2Ad = r.sube_adi;
-          sube2KarlarMap[ay] = kar;
-        }
-      });
-
-      const aylar = Array.from(aylarSet).sort((a, b) => a - b);
-      const sube1Karlar = aylar.map((ay) => sube1KarlarMap[ay] || 0);
-      const sube2Karlar = aylar.map((ay) => sube2KarlarMap[ay] || 0);
-
-      res.render('iki-sube-kar', {
-        title: 'İki Şube Kar Karşılaştırma',
-        activePage: 'iki-sube-kar',
-        yil,
-        subeList: subeRows,
-        sube1Id,
-        sube2Id,
-        sube1Ad,
-        sube2Ad,
-        aylar,
-        sube1Karlar,
-        sube2Karlar,
-      });
+    res.render('kar-karsilastirma', {
+      title: 'İki Şube Kâr Karşılaştırma',
+      activePage: 'kar-karsilastirma',
+      labels,
+      dataset1,
+      dataset2,
+      sube1Key,
+      sube2Key,
     });
-  });
+  } catch (err) {
+    console.error('Kar karşılaştırma hata:', err);
+    res.render('kar-karsilastirma', {
+      title: 'İki Şube Kâr Karşılaştırma',
+      activePage: 'kar-karsilastirma',
+      labels: MONTHS,
+      dataset1: null,
+      dataset2: null,
+      sube1Key,
+      sube2Key,
+    });
+  }
 });
 
-// -------------------------
-// 11) ÜRÜNLER – LİSTE / EKLE / GÜNCELLE / SİL
-// -------------------------
+// ================== ÜRÜNLER ==================
 
-// Liste
-app.get('/urunler', requireAuth, (req, res) => {
-  const sql = 'SELECT * FROM urunler ORDER BY urun_id';
-
-  db.query(sql, (err, rows) => {
-    if (err) {
-      console.error('Ürün listeleme hatası:', err);
-      return res.status(500).send('Veritabanı hatası');
-    }
-
+app.get('/urunler', async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT urun_id, urun_adi, satis_fiyati, stok
+      FROM urunler
+      ORDER BY urun_id
+    `);
     res.render('urunler', {
       title: 'Ürünler',
       activePage: 'urunler',
       urunler: rows,
     });
-  });
+  } catch (err) {
+    console.error('Ürünler hata:', err);
+    res.render('urunler', {
+      title: 'Ürünler',
+      activePage: 'urunler',
+      urunler: [],
+    });
+  }
 });
 
-// Yeni ürün ekle
-app.post('/urunler/ekle', requireAuth, (req, res) => {
+app.post('/urunler/ekle', async (req, res) => {
   const { urun_adi, satis_fiyati, stok } = req.body;
-
-  const sql = `
-    INSERT INTO urunler (urun_adi, satis_fiyati, stok)
-    VALUES (?, ?, ?)
-  `;
-
-  db.query(sql, [urun_adi, satis_fiyati, stok], (err) => {
-    if (err) {
-      console.error('Ürün ekleme hatası:', err);
-      return res.status(500).send('Veritabanı hatası');
-    }
+  try {
+    await db.query(
+      'INSERT INTO urunler (urun_adi, satis_fiyati, stok) VALUES (?, ?, ?)',
+      [urun_adi, satis_fiyati || 0, stok || 0]
+    );
     res.redirect('/urunler');
-  });
+  } catch (err) {
+    console.error('Ürün ekleme hata:', err);
+    res.redirect('/urunler');
+  }
 });
 
-// Ürün güncelle
-app.post('/urunler/guncelle/:id', requireAuth, (req, res) => {
-  const urunId = parseInt(req.params.id, 10);
+app.post('/urunler/:id/sil', async (req, res) => {
+  const id = req.params.id;
+  try {
+    await db.query('DELETE FROM urunler WHERE urun_id = ?', [id]);
+  } catch (err) {
+    console.error('Ürün silme hata:', err);
+  }
+  res.redirect('/urunler');
+});
+
+app.post('/urunler/:id/guncelle', async (req, res) => {
+  const id = req.params.id;
   const { urun_adi, satis_fiyati, stok } = req.body;
-
-  const sql = `
-    UPDATE urunler
-    SET urun_adi = ?, satis_fiyati = ?, stok = ?
-    WHERE urun_id = ?
-  `;
-
-  db.query(sql, [urun_adi, satis_fiyati, stok, urunId], (err) => {
-    if (err) {
-      console.error('Ürün güncelleme hatası:', err);
-      return res.status(500).send('Veritabanı hatası');
-    }
-    res.redirect('/urunler');
-  });
+  try {
+    await db.query(
+      'UPDATE urunler SET urun_adi = ?, satis_fiyati = ?, stok = ? WHERE urun_id = ?',
+      [urun_adi, satis_fiyati || 0, stok || 0, id]
+    );
+  } catch (err) {
+    console.error('Ürün güncelleme hata:', err);
+  }
+  res.redirect('/urunler');
 });
 
-// Ürün sil
-app.post('/urunler/sil/:id', requireAuth, (req, res) => {
-  const urunId = parseInt(req.params.id, 10);
+// ================== LOGOUT ==================
 
-  const sql = 'DELETE FROM urunler WHERE urun_id = ?';
-
-  db.query(sql, [urunId], (err) => {
-    if (err) {
-      console.error('Ürün silme hatası:', err);
-      return res.status(500).send('Veritabanı hatası');
-    }
-    res.redirect('/urunler');
-  });
+app.get('/logout', (req, res) => {
+  res.redirect('/login');
 });
 
-// -------------------------
-// 12) SUNUCU BAŞLATMA
-// -------------------------
+// ================== SUNUCU ==================
 
-const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`Sunucu çalışıyor: http://localhost:${PORT}`);
 });

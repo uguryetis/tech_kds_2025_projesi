@@ -1,74 +1,49 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <%- include('partials/head') %>
+  <%- include('partials/head', { title }) %>
 </head>
 <body>
   <div class="wrapper">
-    <%- include('partials/nav', { activePage: 'dashboard' }) %>
+    <%- include('partials/nav', { activePage }) %>
 
     <main class="main-content">
       <h1 class="page-title">Genel İstatistikler</h1>
 
-      <div class="stats-grid">
-      
-        <div class="card stats-card">
-          <div class="stats-card-header">
-            <div class="stats-card-icon stats-card-icon-primary">
-              <i class="fa-solid fa-shop"></i>
-            </div>
-            <div class="stats-card-text">
-              <div class="stats-card-title">Toplam Şube Sayısı</div>
-              <div class="stats-card-value"><%= toplamSube %></div>
-            </div>
+      <div class="card-grid">
+        <div class="card card-large">
+          <div class="card-icon"><i class="fa-solid fa-store"></i></div>
+          <div class="card-title">Toplam Şube Sayısı</div>
+          <div class="card-value"><%= toplamSube %></div>
+        </div>
+
+        <div class="card card-large">
+          <div class="card-icon"><i class="fa-solid fa-arrow-trend-up"></i></div>
+          <div class="card-title">En Çok Kâr Eden Şube</div>
+          <div class="card-value">
+            <%= enCokKar 
+                ? (enCokKar.sube_adi + ' (' + Number(enCokKar.toplam_kar_m).toFixed(1) + ' Milyon TL)')
+                : '-' %>
           </div>
         </div>
 
-        
-        <div class="card stats-card">
-          <div class="stats-card-header">
-            <div class="stats-card-icon stats-card-icon-success">
-              <i class="fa-solid fa-arrow-trend-up"></i>
-            </div>
-            <div class="stats-card-text">
-              <div class="stats-card-title">En Çok Kâr Eden Şube (Ocak–Haziran 2025)</div>
-              <div class="stats-card-value">
-                <% if (enCokKar) { %>
-                  <%= enCokKar.sube_adi %>
-                  – ₺<%= Number(enCokKar.toplam_kar || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 }) %>
-                <% } else { %>
-                  Veri yok
-                <% } %>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        
-        <div class="card stats-card">
-          <div class="stats-card-header">
-            <div class="stats-card-icon stats-card-icon-danger">
-              <i class="fa-solid fa-arrow-trend-down"></i>
-            </div>
-            <div class="stats-card-text">
-              <div class="stats-card-title">En Az Kâr Eden Şube (Ocak–Haziran 2025)</div>
-              <div class="stats-card-value">
-                <% if (enAzKar) { %>
-                  <%= enAzKar.sube_adi %>
-                  – ₺<%= Number(enAzKar.toplam_kar || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 }) %>
-                <% } else { %>
-                  Veri yok
-                <% } %>
-              </div>
-            </div>
+        <div class="card card-large">
+          <div class="card-icon"><i class="fa-solid fa-arrow-trend-down"></i></div>
+          <div class="card-title">En Az Kâr Eden Şube</div>
+          <div class="card-value">
+            <%= enAzKar 
+                ? (enAzKar.sube_adi + ' (' + Number(enAzKar.toplam_kar_m).toFixed(1) + ' Milyon TL)')
+                : '-' %>
           </div>
         </div>
       </div>
-
     </main>
   </div>
 </body>
 </html>
+
+
+
 
 
 

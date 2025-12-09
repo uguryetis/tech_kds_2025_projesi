@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <%- include('partials/head', { title }) %>
+</head>
+<body>
+  <div class="wrapper">
+    <%- include('partials/nav', { activePage }) %>
+
+    <main class="main-content">
+      <h1 class="page-title">Şube Müşteri Analizi</h1>
+
+      <div class="card">
+        <form action="/musteri-analiz" method="get" class="filter-bar">
+          <div class="filter-group">
+            <label for="ay">Ay Seç (İsteğe Bağlı)</label>
+            <select name="ay" id="ay">
+              <option value="0" <%= seciliAy === 0 ? 'selected' : '' %>>
+                Tüm Dönem (Ocak-Haziran)
+              </option>
+              <% months.forEach((m, idx) => { %>
+                <option value="<%= idx+1 %>" <%= (seciliAy === idx+1) ? 'selected' : '' %>>
+                  <%= m %>
+                </option>
+              <% }) %>
+            </select>
+          </div>
+          <button type="submit" class="btn-primary">
+            <i class="fa-solid fa-filter"></i>
+            Verileri Göster
+          </button>
+        </form>
+      </div>
+
+      <div class="card-large-chart card-large-chart-left">
+        <canvas id="musteriPie"></canvas>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const musteriLabels = <%- JSON.stringify(labels) %>;
+    const musteriData   = <%- JSON.stringify(data) %>;
+    const musteriColors = <%- JSON.stringify(colors) %>;
+    const sliceOffsets  = <%- JSON.stringify(offsets) %>;
+    const totalMusteri  = musteriData.reduce((a, b) => a + b, 0);
+
+    const ctxPie = document.getElementById('musteriPie').getContext('2d');
+
+    
+    Chart.register(ChartDataLabels);
+
+    new Chart(ctxPie, {
+      type: 'pie',
+      data: {
+        labels: musteriLabels,
+        datasets: [{
+          data: musteriData,
+          backgroundColor: musteriColors,
+          offset: sliceOffsets
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom' },
+          title: {
+            display: true,
+            text: 'Şubelere Göre Müşteri Dağılımı (Ocak-Haziran 2025)'
+          },
+          datalabels: {
+            color: '#111827',
+            font: { size: 11, weight: '600' },
+            formatter: (value) => {
+              if (!totalMusteri) return '';
+              const oran = (value / totalMusteri) * 100;
+              return oran.toFixed(1) + '%';
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const value = context.raw || 0;
+                return `${label}: ${value} müşteri`;
+              }
+            }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+

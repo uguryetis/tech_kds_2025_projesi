@@ -1,21 +1,14 @@
-// db.js
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise');
 
 const pool = mysql.createPool({
   host: 'localhost',
-  user: 'root',
-  password: '',           
-  database: 'tech_kds',
-  port: 3306
+  user: 'root',         
+  password: '',         
+  database: 'tech_kds', 
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
 });
 
-pool.getConnection((err, conn) => {
-  if (err) {
-    console.error('MySQL baglanti hatasi:', err);
-  } else {
-    console.log('MySQL baglanti basarili.');
-    conn.release();
-  }
-});
+module.exports = pool;
 
-module.exports = pool.promise();

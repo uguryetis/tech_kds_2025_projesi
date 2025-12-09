@@ -1,60 +1,61 @@
-<div class="sidebar">
-  <div class="sidebar-logo">
-    <img src="/logo.png" alt="İndeks Bilgisayar Logo" class="sidebar-logo-img">
-    <span class="sidebar-logo-text">İNDEKS BİLGİSAYAR</span>
+<nav class="sidebar">
+  <div class="sidebar-brand">
+    <div class="logo-circle"></div>
+    <div class="brand-text">İndeks Bilgisayar</div>
   </div>
 
   <ul class="nav-links">
     <li>
       <a href="/" class="<%= activePage === 'dashboard' ? 'active' : '' %>">
-        <i class="fa-solid fa-house nav-link-icon"></i>
-        Anasayfa
+        <i class="fa-solid fa-house"></i>
+        <span>Anasayfa</span>
       </a>
     </li>
     <li>
       <a href="/sube-ciro" class="<%= activePage === 'sube-ciro' ? 'active' : '' %>">
-        <i class="fa-solid fa-chart-column nav-link-icon"></i>
-        Şube Ciro Analizi
+        <i class="fa-solid fa-chart-column"></i>
+        <span>Şube Ciro Analizi</span>
       </a>
     </li>
     <li>
       <a href="/sube-kar" class="<%= activePage === 'sube-kar' ? 'active' : '' %>">
-        <i class="fa-solid fa-chart-line nav-link-icon"></i>
-        Şube Kâr Analizi
+        <i class="fa-solid fa-chart-line"></i>
+        <span>Şube Kâr Analizi</span>
       </a>
     </li>
     <li>
-      <a href="/sube-musteri" class="<%= activePage === 'sube-musteri' ? 'active' : '' %>">
-        <i class="fa-solid fa-users nav-link-icon"></i>
-        Şube Müşteri Analizi
+      <a href="/musteri-analiz" class="<%= activePage === 'musteri-analiz' ? 'active' : '' %>">
+        <i class="fa-solid fa-users"></i>
+        <span>Şube Müşteri Analizi</span>
       </a>
     </li>
     <li>
       <a href="/sube-stok" class="<%= activePage === 'sube-stok' ? 'active' : '' %>">
-        <i class="fa-solid fa-boxes-stacked nav-link-icon"></i>
-        Şube Stok Analizi
+        <i class="fa-solid fa-boxes-stacked"></i>
+        <span>Şube Stok Analizi</span>
       </a>
     </li>
     <li>
-      <a href="/iki-sube-kar" class="<%= activePage === 'iki-sube-kar' ? 'active' : '' %>">
-        <i class="fa-solid fa-code-compare nav-link-icon"></i>
-        İki Şube Kâr Karşılaştırma
+      <a href="/kar-karsilastirma" class="<%= activePage === 'kar-karsilastirma' ? 'active' : '' %>">
+        <i class="fa-solid fa-scale-balanced"></i>
+        <span>İki Şube Kâr Karşılaştırma</span>
       </a>
     </li>
     <li>
       <a href="/urunler" class="<%= activePage === 'urunler' ? 'active' : '' %>">
-        <i class="fa-solid fa-box nav-link-icon"></i>
-        Ürünler
+        <i class="fa-solid fa-box-open"></i>
+        <span>Ürünler</span>
       </a>
     </li>
   </ul>
 
-  <div class="logout-link">
+  <div class="sidebar-footer">
     <a href="/logout">
-      <i class="fa-solid fa-right-from-bracket nav-link-icon"></i>
-      Çıkış Yap
+      <i class="fa-solid fa-right-from-bracket"></i>
+      <span>Çıkış Yap</span>
     </a>
   </div>
-</div>
+</nav>
+
 
 
