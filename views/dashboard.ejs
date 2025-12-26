@@ -2,6 +2,92 @@
 <html lang="tr">
 <head>
   <%- include('partials/head', { title }) %>
+  <style>
+    .score-section {
+      margin-top: 32px;
+    }
+    .score-section h2 {
+      margin-bottom: 8px;
+    }
+    .score-section p {
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 8px;
+    }
+    .score-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .score-table th,
+    .score-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+    }
+    .score-table th {
+      text-align: left;
+      background: #f8f9fa;
+      font-weight: 600;
+    }
+
+    .badge-skor {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge-kritik {
+      background: #fdecea;
+      color: #e74c3c;
+    }
+    .badge-izlenmeli {
+      background: #fff4e5;
+      color: #f39c12;
+    }
+    .badge-iyi {
+      background: #e8f4ff;
+      color: #3498db;
+    }
+    .badge-basarili {
+      background: #eafaf1;
+      color: #2ecc71;
+    }
+
+    .scenario-section {
+      margin-top: 32px;
+    }
+    .scenario-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .scenario-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #scenarioSelect {
+      padding: 4px 8px;
+      font-size: 14px;
+    }
+    .scenario-message {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #333;
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 6px;
+    }
+  </style>
 </head>
 <body>
   <div class="wrapper">
@@ -37,10 +123,66 @@
           </div>
         </div>
       </div>
-    </main>
-  </div>
+
+      <!-- 1) ŞUBE SAĞLIK SKORU -->
+      <section class="score-section">
+        <h2>Şube Sağlık Skoru</h2>
+        <p>
+          Skor; net kâr, ciro, müşteri oranı ve stok devir günü bileşenlerinin
+          6 aylık performansına göre hesaplanmıştır.
+        </p>
+
+        <table class="score-table">
+          <thead>
+            <tr>
+              <th>Şube</th>
+              <th>Skor</th>
+              <th>Durum</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (hasSkor && skorTablo && skorTablo.length > 0) { %>
+              <% skorTablo.forEach(function(row) { 
+                   var d = row.durum || '';
+                   var badgeClass = 'badge-skor ';
+                   if (d.indexOf('Kritik') === 0) {
+                     badgeClass += 'badge-kritik';
+                   } else if (d.indexOf('İyi') === 0) {
+                     badgeClass += 'badge-iyi';
+                   } else if (d.indexOf('İzlenmeli') === 0) {
+                     badgeClass += 'badge-izlenmeli';
+                   } else {
+                     badgeClass += 'badge-basarili';
+                   }
+              %>
+                <tr>
+                  <td><%= row.sube_adi %></td>
+                  <td><%= row.skor %></td>
+                  <td><span class="<%= badgeClass %>"><%= row.durum %></span></td>
+                </tr>
+              <% }); %>
+            <% } else { %>
+              <tr>
+                <td colspan="3">Skor verisi yüklenemedi.</td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </section>
+
+  
+
+    
+     
+  </script>
 </body>
 </html>
+
+
+
+
+
+
 
 
 
