@@ -38,29 +38,11 @@ function rgbaForBranch(key) {
   }
 }
 
-// ================== SAĞLIK SKORU YARDIMCI FONKSİYONLARI ==================
-//
-// Kurallar (aylık):
-// - Ciro:
-//    > 200 M → +2 puan
-//    > 500 M → +1 puan daha (toplam +3)
-// - Net Kâr:
-//    > 0     → +4 puan
-//    > 50 M  → +1 puan daha (toplam +5)
-//    ≤ 0     → 0 puan
-// - Müşteri Oranı (o aydaki toplam müşteriye göre %):
-//    ≥ %10   → +2 puan
-//    ≥ %25   → +1 puan daha (toplam +3)
-// - Stok Devir Günü:
-//    < 60 gün → +2 puan
-//    < 45 gün → +1 puan daha (toplam +3)
-//
-// Maksimum: 14 puan / ay → 6 ayda 84 puan.
-// Sonra 0–100 aralığına ölçekleniyor.
+
 
 function hesaplaRawPuanlar(branchDataList, toplamMusteriAy, opts = {}) {
-  const stokFactor = opts.stokFactor || 1;  // Senaryo A için 1.25
-  const netKarFactor = opts.netKarFactor || 1; // Senaryo B için 0.8
+  const stokFactor = opts.stokFactor || 1;  
+  const netKarFactor = opts.netKarFactor || 1; 
   const rawPoints = [];
 
   branchDataList.forEach((b) => {
@@ -77,7 +59,7 @@ function hesaplaRawPuanlar(branchDataList, toplamMusteriAy, opts = {}) {
       const toplamM = toplamMusteriAy[ay] || 0;
       const oran = toplamM > 0 ? (musteri / toplamM) * 100 : 0;
 
-      // Ciro puanı
+      
       if (ciro > 200) {
         puan += 2;
         if (ciro > 500) {
@@ -85,7 +67,7 @@ function hesaplaRawPuanlar(branchDataList, toplamMusteriAy, opts = {}) {
         }
       }
 
-      // Net kâr puanı
+      
       if (netKar > 0) {
         puan += 4;
         if (netKar > 50) {
@@ -93,7 +75,7 @@ function hesaplaRawPuanlar(branchDataList, toplamMusteriAy, opts = {}) {
         }
       }
 
-      // Müşteri oranı puanı
+      
       if (oran >= 10) {
         puan += 2;
         if (oran >= 25) {
@@ -101,7 +83,7 @@ function hesaplaRawPuanlar(branchDataList, toplamMusteriAy, opts = {}) {
         }
       }
 
-      // Stok devir günü puanı (düşük gün iyidir)
+      
       if (stokGun > 0 && stokGun < 60) {
         puan += 2;
         if (stokGun < 45) {
@@ -117,7 +99,7 @@ function hesaplaRawPuanlar(branchDataList, toplamMusteriAy, opts = {}) {
 }
 
 function skorlaraDonustur(rawPoints) {
-  const maxPossible = 84; // 6 ay * 14 puan
+  const maxPossible = 84; 
   const skorlar = rawPoints.map((p) =>
     Math.round((p / maxPossible) * 100)
   );
@@ -125,7 +107,7 @@ function skorlaraDonustur(rawPoints) {
   const n = skorlar.length;
   const durumEtiketleri = new Array(n);
 
-  // En düşük her zaman "Kritik"
+  
   const sirali = skorlar.map((s, i) => ({ i, s })).sort((a, b) => b.s - a.s);
 
   sirali.forEach(({ i }, rank) => {
@@ -145,9 +127,9 @@ function skorlaraDonustur(rawPoints) {
   return { skorlar, durumEtiketleri };
 }
 
-// Tüm yıl verilerini çekip, mevcut / senaryo A / senaryo B skorlarını hesaplar
+
 async function hesaplaSubeSkorlari(yil) {
-  // Aylık performans
+  
   const [perfRows] = await db.query(
     `
     SELECT 
@@ -189,7 +171,7 @@ async function hesaplaSubeSkorlari(yil) {
 
   const toplamMusteriAy = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
 
-  // Performans verilerini doldur
+  
   perfRows.forEach((r) => {
     const b = branchMap.get(r.sube_id);
     if (!b) return;
@@ -200,7 +182,7 @@ async function hesaplaSubeSkorlari(yil) {
     toplamMusteriAy[r.ay] += Number(r.musteri_sayisi) || 0;
   });
 
-  // Stok verilerini doldur
+  
   stokRows.forEach((r) => {
     const b = branchMap.get(r.sube_id);
     if (!b) return;
@@ -210,21 +192,21 @@ async function hesaplaSubeSkorlari(yil) {
 
   const branchDataList = BRANCHES.map((b) => branchMap.get(b.id));
 
-  // Mevcut
+  
   const baseRaw = hesaplaRawPuanlar(
     branchDataList,
     toplamMusteriAy,
     { stokFactor: 1, netKarFactor: 1 }
   );
 
-  // Senaryo A: stok devir günleri %25 kötüleşir (stokFactor 1.25)
+  
   const senaryoARaw = hesaplaRawPuanlar(
     branchDataList,
     toplamMusteriAy,
     { stokFactor: 1.25, netKarFactor: 1 }
   );
 
-  // Senaryo B: net kâr %20 düşer (netKarFactor 0.8)
+  
   const senaryoBRaw = hesaplaRawPuanlar(
     branchDataList,
     toplamMusteriAy,
@@ -250,7 +232,7 @@ app.get('/login', (req, res) => {
 });
 
 app.post('/login', (req, res) => {
-  // Şimdilik doğrudan anasayfaya atıyoruz
+  
   return res.redirect('/');
 });
 
@@ -260,7 +242,7 @@ app.get('/', async (req, res) => {
   const yil = 2025;
 
   try {
-    // Eski kart verileri
+    
     const [rows] = await db.query(
       `
       SELECT s.sube_adi,
@@ -286,7 +268,7 @@ app.get('/', async (req, res) => {
         (a, b) => Number(a.toplam_kar_m) - Number(b.toplam_kar_m)
       )[0] || null;
 
-    // Yeni: Şube Sağlık Skoru + Senaryo verisi
+    
     let skorVerisi = null;
     let skorTablo = [];
     try {
@@ -457,7 +439,7 @@ app.get('/sube-kar', async (req, res) => {
 
 app.get('/musteri-analiz', async (req, res) => {
   const yil = 2025;
-  const seciliAy = parseInt(req.query.ay || '0', 10); // 0 = 6 aylık toplam
+  const seciliAy = parseInt(req.query.ay || '0', 10); 
 
   try {
     const params = [yil];
