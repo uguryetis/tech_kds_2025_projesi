@@ -1,14 +1,15 @@
 {
   "name": "tech_kds_panel",
   "version": "1.0.0",
-  "description": "Tech KDS Subeler icin karar destek paneli",
+  "description": "Tech KDS Subeler İcin Karar Destek Paneli",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon app.js"
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js"
   },
   "dependencies": {
     "body-parser": "^1.20.3",
+    "dotenv": "^17.2.3",
     "ejs": "^3.1.10",
     "express": "^4.21.2",
     "express-session": "^1.18.1",
@@ -18,4 +19,3 @@
     "nodemon": "^3.1.10"
   }
 }
-
